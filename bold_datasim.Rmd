@@ -1,0 +1,95 @@
+---
+title: "dummy BOLD script"
+author: "DVM Bishop"
+date: "07/06/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+
+This script is designed to anticipate data analysis for [the OxBOLD project](https://boldstudy.wordpress.com/)
+
+```{r readredcap}
+#Redcap file exported with confidential information removed and stored on local copy of repository.
+alldat <- read.csv('TheBOLDStudy_DATA_2018-06-07_1054.csv')
+#str(alldat) #check file
+#head(alldat)
+
+```
+
+Ultimately, we will need a file with summary language test scores.
+For the present, will simulate some data.
+
+```{r simdata}
+myvars <- c('ID',
+            'oromotor_ss',
+            'rowpvt_std_score','eopvt_std_score',
+            'sasit_std_score','trog_std_score',
+            'errni_info_std_score','errni_mlu_std_score',
+            'errni_comp_std_score',
+            'matrix_ss','blocks_ss',
+            'nwrp_ss','digitspan_ss',
+            'wl_immed_std','wl_delay_std','wl_delay_recog_std',
+            'domhand')
+#Ignore reading measures,  coding and pegmoving for the time being 
+simdat <- data.frame(matrix(NA,nrow=160, ncol=length(myvars)))
+colnames(simdat)<-myvars
+simdat$ID <-1:nrow(simdat)
+
+#assume language and nv measures composed of factors relating to:
+#speech, lang, IQ, speed, stm,ltm plus error term
+
+#This is pure fiction, but just a way of generating data.
+#First make some underlying factors: these are z-scores for each individual: not correlated
+
+speech <- rnorm(nrow(simdat))
+lang <-rnorm(nrow(simdat))
+IQ <-rnorm(nrow(simdat))
+stm <-rnorm(nrow(simdat))
+ltm <-rnorm(nrow(simdat))
+
+#treat test scores as composites of these
+
+simdat$oromotor_ss <- .5*speech + .2*stm + .3*rnorm(nrow(simdat))
+simdat$rowpvt_std_score <- .5*lang + .3*IQ + .2*rnorm(nrow(simdat))
+simdat$eopvt_std_score <- .5*lang + .1*speech +.1*IQ + .3*rnorm(nrow(simdat))
+simdat$sasit_std_score <- .7*lang + .1*speech + .2*rnorm(nrow(simdat))
+simdat$trog_std_score <-  .5*lang + .2*IQ + .1*stm+.2*rnorm(nrow(simdat))
+simdat$errni_info_std_score <-.7*lang + .1*ltm + .2*rnorm(nrow(simdat))
+simdat$errni_mlu_std_score<-.8*lang + .1*speech + .1*rnorm(nrow(simdat))
+simdat$errni_comp_std_score <-.5*lang + .2*ltm + .3*rnorm(nrow(simdat))
+simdat$matrix_ss <- .3*lang+.6*IQ+.1*rnorm(nrow(simdat))
+simdat$blocks_ss <- .8*IQ + .2*rnorm(nrow(simdat))
+simdat$nwrp_ss <- .4*speech + .4*stm + .2*rnorm(nrow(simdat))
+simdat$digitspan_ss <- .8*stm+.2*rnorm(nrow(simdat))
+simdat$wl_immed_std <- .4*stm+.4*ltm+.2*rnorm(nrow(simdat))
+simdat$wl_delay_std <- .2*stm+.6*ltm+.2*rnorm(nrow(simdat))
+simdat$wl_delay_recog_std <- .2*stm+.6*ltm+.2*rnorm(nrow(simdat))
+simdat$domhand <-1
+w<-which(runif(nrow(simdat))<.08)
+simdat$domhand[w]<-0
+
+
+```
+
+Now we consider correlations between variables and do exploratory factor analysis
+
+```{r varcorr}
+facdat <- simdat[,2:(length(simdat)-1)]
+mycor <- cor(facdat)
+print(round(mycor,2))
+
+# Maximum Likelihood Factor Analysis
+# entering raw data and extracting factors,
+# with varimax rotation
+fit <- factanal(facdat, 6, rotation="varimax")
+print(fit, digits=2, cutoff=.3, sort=TRUE)
+# plot factor 1 by factor 2
+load <- fit$loadings[,1:2]
+plot(load,type="n") # set up plot
+text(load,labels=names(facdat),cex=.7) # add variable names 
+```
